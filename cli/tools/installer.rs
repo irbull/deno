@@ -32,7 +32,7 @@ use std::path::PathBuf;
 use std::os::unix::fs::PermissionsExt;
 
 static EXEC_NAME_RE: Lazy<Regex> = Lazy::new(|| {
-  RegexBuilder::new(r"^[a-z][\w-]*$")
+  RegexBuilder::new(r"^[a-z0-9][\w-]*$")
     .case_insensitive(true)
     .build()
     .expect("invalid regex")
@@ -1168,6 +1168,27 @@ mod tests {
 
     let content = fs::read_to_string(file_path).unwrap();
     assert!(content.contains(&expected_string));
+  }
+
+  #[tokio::test]
+  async fn test_valid_exe_names() {
+    assert!(
+      validate_name("abc").is_ok(),
+      "filename start with lowercase letters"
+    );
+    assert!(
+      validate_name("aBC").is_ok(),
+      "filename contains uppercase letters"
+    );
+    assert!(
+      validate_name("1abc").is_ok(),
+      "filename starts with a number"
+    );
+    assert!(validate_name("abc2").is_ok(), "filename contains numbers");
+    assert_eq!(
+      validate_name("ab c").unwrap_err().to_string(),
+      "Invalid executable name: ab c"
+    );
   }
 
   // Regression test for https://github.com/denoland/deno/issues/10556.
